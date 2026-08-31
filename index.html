@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Big 7 — Ladder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="grain"></div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="wordmark">
+      <span class="wordmark-num">7</span>
+      <div class="wordmark-text">
+        <h1>BIG&nbsp;7</h1>
+        <p>Pickup Ladder</p>
+      </div>
+    </div>
+    <button id="addPlayerBtn" class="ghost-btn">+ Player</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="ladder">Ladder</button>
+  <button class="tab-btn" data-tab="history">History</button>
+  <button class="tab-btn" data-tab="stats">Stats</button>
+</nav>
+
+<main>
+
+  <div id="ladderView">
+    <!-- King spotlight -->
+    <section class="spotlight" id="spotlight" aria-live="polite">
+      <!-- filled by JS -->
+    </section>
+
+    <!-- The Ladder -->
+    <section class="ladder-wrap">
+      <div class="ladder-rail" aria-hidden="true"></div>
+      <ol id="ladder" class="ladder">
+        <!-- rows filled by JS -->
+      </ol>
+      <p id="emptyState" class="empty-state" hidden>
+        No one's on the ladder yet. Tap <strong>+ Player</strong> to add the first name.
+      </p>
+    </section>
+  </div>
+
+  <div id="historyView" hidden>
+    <ul id="historyFeed" class="feed"></ul>
+    <p id="historyEmptyState" class="empty-state" hidden>
+      No games logged yet. Tap <strong>Log Game</strong> to record the first one.
+    </p>
+  </div>
+
+  <div id="statsView" hidden>
+    <p id="statsSummary" class="stats-summary"></p>
+    <div id="statsList"></div>
+    <p id="statsEmptyState" class="empty-state" hidden>
+      Log a few games to start seeing stats.
+    </p>
+  </div>
+
+</main>
+
+<button id="logGameBtn" class="fab">
+  <span class="fab-icon">＋</span>
+  <span class="fab-label">Log Game</span>
+</button>
+
+<!-- Log Game Modal -->
+<div id="gameModal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-labelledby="gameModalTitle">
+    <div class="modal-head">
+      <h2 id="gameModalTitle">Log a Game</h2>
+      <button class="close-btn" data-close>×</button>
+    </div>
+    <form id="gameForm">
+      <div class="matchup">
+        <div class="side">
+          <label for="player1Select">Player</label>
+          <select id="player1Select" required></select>
+          <input type="number" id="player1Score" class="score-input" min="0" inputmode="numeric" placeholder="Score">
+        </div>
+        <div class="vs">VS</div>
+        <div class="side">
+          <label for="player2Select">Player</label>
+          <select id="player2Select" required></select>
+          <input type="number" id="player2Score" class="score-input" min="0" inputmode="numeric" placeholder="Score">
+        </div>
+      </div>
+
+      <label class="toggle-row">
+        <input type="checkbox" id="trackScores" checked>
+        <span>Track scores for this game</span>
+      </label>
+
+      <div id="winnerPicker" class="winner-picker" hidden>
+        <label>Who won?</label>
+        <div class="winner-options">
+          <button type="button" class="winner-option" data-side="1"></button>
+          <button type="button" class="winner-option" data-side="2"></button>
+        </div>
+      </div>
+
+      <p class="form-error" id="gameFormError" hidden></p>
+      <button type="submit" class="primary-btn">Save Game</button>
+    </form>
+  </div>
+</div>
+
+<!-- Add Player Modal -->
+<div id="playerModal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-labelledby="playerModalTitle">
+    <div class="modal-head">
+      <h2 id="playerModalTitle">Add Player</h2>
+      <button class="close-btn" data-close>×</button>
+    </div>
+    <form id="playerForm">
+      <label for="playerName">Name</label>
+      <input type="text" id="playerName" required placeholder="e.g. Mike">
+      <label for="playerPhoto">Photo filename <span class="hint">(optional — file in /photos)</span></label>
+      <input type="text" id="playerPhoto" placeholder="e.g. mike.jpg">
+      <p class="form-error" id="playerFormError" hidden></p>
+      <button type="submit" class="primary-btn">Add to Ladder</button>
+    </form>
+  </div>
+</div>
+
+<!-- Player History Modal -->
+<div id="historyModal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-labelledby="historyModalTitle">
+    <div class="modal-head">
+      <h2 id="historyModalTitle">History</h2>
+      <button class="close-btn" data-close>×</button>
+    </div>
+    <div id="historyStats" class="history-stats"></div>
+    <ul id="historyList" class="history-list"></ul>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

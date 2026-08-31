@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Big 7 is a small friend group app: anyone with the link can read
+    // and write scores/players. No login required, by design (see
+    // DECISIONS.md). Structure is still validated below so a stray
+    // write can't corrupt the shape of the data.
+
+    match /players/{playerId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['name','rank','wins','losses','totalPoints'])
+                    && request.resource.data.name is string
+                    && request.resource.data.rank is int;
+      allow update: if request.resource.data.name is string
+                    && request.resource.data.rank is int
+                    && request.resource.data.wins is int
+                    && request.resource.data.losses is int;
+      allow delete: if true;
+    }
+
+    match /games/{gameId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['player1Id','player2Id','winnerId','loserId']);
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

@@ -16,8 +16,13 @@ Sam (rank 3) beats Dave (rank 2) → Sam moves to rank 2, Dave moves to rank 3. 
 
 Mike (rank 1) beats Ravi (rank 4) → Mike moves to rank 4, Ravi moves to rank 1. Winning doesn't protect a high rank against a low-ranked opponent — every matchup is a genuine risk for both players.
 
+## Guard against accidental swaps
+Since every game unconditionally swaps ranks, an accidental tap on "Log Game" could shuffle the ladder for no reason. To prevent that, logging a game is locked by default — tapping the orange "7" logo in the header seven times within a few seconds turns on admin mode. Tapping it again while unlocked turns it back off (an easy manual cancel).
+
+While admin mode is on, tapping a player on the ladder selects them (tap again to deselect); once two are selected, the Log Game button shows who it'll log and turns green. Tapping it opens the game form pre-filled with those two — pick a winner, add scores or not, save. After a game is logged, admin mode automatically turns back off, so logging the next one requires the ritual again. This is a friction speed bump, not real security (same open-write tradeoff as everything else — see DECISIONS.md).
+
 ## Scores are optional
-Logging a game only strictly requires picking a winner. Scores can be entered too (toggle in the form) — when present they're used for career point totals shown in a player's history; when absent, `totalPoints` just isn't incremented for that game. Either way, the swap rule above applies identically.
+Logging a game only strictly requires picking a winner. Scores can be entered too (toggle in the form) — when present they're used for career point totals and the new average-points stats shown in the Stats tab; when absent, those totals just aren't incremented for that game. Either way, the swap rule above applies identically.
 
 ## Every game updates
 1. `wins`/`losses` +1 for the two players involved

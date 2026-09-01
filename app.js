@@ -39,7 +39,88 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-document.getElementById('logGameBtn').addEventListener('click', () => openGameModal());
+document.getElementById('logGameBtn').addEventListener('click', () => {
+  if (!gameLoggingUnlocked) {
+    showToast(`Tap the 7 logo seven times to unlock (${7 - logoTapCount} to go)`);
+    return;
+  }
+  if (selectedForSwap.length === 2) {
+    openGameModal(selectedForSwap[0], selectedForSwap[1]);
+  } else {
+    showToast('Tap 2 players on the ladder to log a game between them');
+  }
+});
+
+// ---------- Tap-7-times-to-unlock + tap-2-players admin flow ----------
+let gameLoggingUnlocked = false;
+let logoTapCount = 0;
+let logoTapTimer = null;
+let selectedForSwap = []; // up to 2 player ids, picked by tapping ladder rows
+
+function lockGameLogging() {
+  gameLoggingUnlocked = false;
+  logoTapCount = 0;
+  selectedForSwap = [];
+  document.getElementById('logGameBtn').classList.add('locked');
+  document.getElementById('fabIcon').textContent = '🔒';
+  updateFabForSelection();
+  renderLadder();
+}
+
+function unlockGameLogging() {
+  gameLoggingUnlocked = true;
+  document.getElementById('logGameBtn').classList.remove('locked');
+  document.getElementById('fabIcon').textContent = '＋';
+  showToast('Admin mode on — tap 2 players to log a game');
+  updateFabForSelection();
+}
+
+function updateFabForSelection() {
+  const label = document.querySelector('.fab-label');
+  const fab = document.getElementById('logGameBtn');
+  if (!gameLoggingUnlocked) {
+    label.textContent = 'Log Game';
+    fab.classList.remove('ready');
+  } else if (selectedForSwap.length === 2) {
+    label.textContent = `Log: ${nameFor(selectedForSwap[0])} vs ${nameFor(selectedForSwap[1])}`;
+    fab.classList.add('ready');
+  } else if (selectedForSwap.length === 1) {
+    label.textContent = `${nameFor(selectedForSwap[0])} — pick 1 more`;
+    fab.classList.remove('ready');
+  } else {
+    label.textContent = 'Tap 2 players below';
+    fab.classList.remove('ready');
+  }
+}
+
+function handleRungClick(p) {
+  if (!gameLoggingUnlocked) {
+    openHistory(p);
+    return;
+  }
+  const idx = selectedForSwap.indexOf(p.id);
+  if (idx !== -1) {
+    selectedForSwap.splice(idx, 1); // tap again to deselect
+  } else if (selectedForSwap.length < 2) {
+    selectedForSwap.push(p.id);
+  } else {
+    selectedForSwap = [p.id]; // already had 2 — start a fresh pick
+  }
+  renderLadder();
+  updateFabForSelection();
+}
+
+document.querySelector('.wordmark-num').addEventListener('click', () => {
+  if (gameLoggingUnlocked) {
+    lockGameLogging();
+    showToast('Admin mode off');
+    return;
+  }
+  logoTapCount++;
+  clearTimeout(logoTapTimer);
+  logoTapTimer = setTimeout(() => { logoTapCount = 0; }, 4000);
+  if (logoTapCount >= 7) unlockGameLogging();
+});
 document.getElementById('addPlayerBtn').addEventListener('click', () => openModal(playerModal));
 
 document.querySelectorAll('[data-close]').forEach(btn =>
@@ -122,9 +203,13 @@ function renderLadder() {
       setTimeout(() => li.classList.remove('swapped'), 1100);
     }
 
+    const pickIndex = selectedForSwap.indexOf(p.id);
+    if (pickIndex !== -1) li.classList.add('selected');
+
     const deltaBadge = p.lastRankChanged && p.lastRankDelta
       ? `<span class="rank-delta ${p.lastRankDelta > 0 ? 'up' : 'down'}">${p.lastRankDelta > 0 ? '▲' : '▼'}${Math.abs(p.lastRankDelta)}</span>`
       : '';
+    const pickBadge = pickIndex !== -1 ? `<span class="pick-badge">${pickIndex + 1}</span>` : '';
 
     li.innerHTML = `
       <div class="rank-wrap">
@@ -137,9 +222,10 @@ function renderLadder() {
       <div class="rung-info">
         <p class="rung-name">${p.name}</p>
         <p class="rung-meta">${contextLine(p) || `<span class="w">${p.wins}W</span> · <span class="l">${p.losses}L</span>`}</p>
-      </div>`;
+      </div>
+      ${pickBadge}`;
 
-    li.addEventListener('click', () => openHistory(p));
+    li.addEventListener('click', () => handleRungClick(p));
     ladderEl.appendChild(li);
   });
 
@@ -223,7 +309,7 @@ document.getElementById('playerForm').addEventListener('submit', async e => {
 });
 
 // ---------- Log game ----------
-function openGameModal() {
+function openGameModal(presetP1Id, presetP2Id) {
   if (players.length < 2) {
     showToast('Add at least 2 players first');
     return;
@@ -231,6 +317,11 @@ function openGameModal() {
   document.getElementById('gameForm').reset();
   selectedWinnerSide = null;
   document.querySelectorAll('.winner-option').forEach(b => b.classList.remove('selected'));
+  if (presetP1Id && presetP2Id) {
+    document.getElementById('player1Select').value = presetP1Id;
+    document.getElementById('player2Select').value = presetP2Id;
+    updateWinnerLabels();
+  }
   syncScoreMode();
   openModal(gameModal);
 }
@@ -331,6 +422,7 @@ document.getElementById('gameForm').addEventListener('submit', async e => {
     await logGame(winnerId, loserId, winnerScore, loserScore);
     closeAllModals();
     showToast('Game logged');
+    if (gameLoggingUnlocked) lockGameLogging(); // re-lock — each game requires the ritual again
   } catch (err) {
     errEl.textContent = 'Could not save game. Check your connection and try again.';
     errEl.hidden = false;
@@ -521,7 +613,8 @@ function renderStats() {
   if (!listEl) return;
 
   emptyEl.hidden = allGames.length > 0;
-  summaryEl.textContent = `${allGames.length} game${allGames.length === 1 ? '' : 's'} logged · ${players.length} players`;
+  const scoredGamesTotal = allGames.filter(g => g.hasScores).length;
+  summaryEl.textContent = `${allGames.length} game${allGames.length === 1 ? '' : 's'} logged (${scoredGamesTotal} with scores) · ${players.length} players`;
 
   const sorted = players.slice().sort((a, b) => a.rank - b.rank);
 
@@ -531,6 +624,13 @@ function renderStats() {
     const trend = computeTrend(gameList, p.id);
     const streak = computeStreak(gameList, p.id);
     const h2h = computeHeadToHead(gameList, p.id);
+
+    const scoredGames = gameList.filter(g => g.hasScores);
+    const pointsScored = scoredGames.map(g => g.winnerId === p.id ? g.player1Score : g.player2Score);
+    const avgPoints = pointsScored.length
+      ? (pointsScored.reduce((a, b) => a + b, 0) / pointsScored.length).toFixed(1)
+      : null;
+    const bestGame = pointsScored.length ? Math.max(...pointsScored) : null;
 
     const h2hRows = h2h.map(row => {
       const cls = row.wins > row.losses ? 'win' : row.wins < row.losses ? 'loss' : 'even';
@@ -558,6 +658,12 @@ function renderStats() {
         </div>
         <span class="trend-badge ${trend.cls}">${trend.label}</span>
         ${streak ? `<span class="streak-note">${streak}</span>` : ''}
+        <div class="mini-stats">
+          <div><span class="mini-num">${gameList.length}</span><span class="mini-label">Games</span></div>
+          <div><span class="mini-num">${avgPoints ?? '—'}</span><span class="mini-label">Avg pts</span></div>
+          <div><span class="mini-num">${bestGame ?? '—'}</span><span class="mini-label">Best game</span></div>
+          <div><span class="mini-num">${p.totalPoints}</span><span class="mini-label">Total pts</span></div>
+        </div>
         ${h2h.length ? `<div class="h2h-grid">${h2hRows}</div>` : ''}
       </div>`;
   }).join('');

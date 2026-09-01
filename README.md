@@ -36,6 +36,8 @@ That URL is what you share in the Big 7 group chat. Anyone who opens it can log 
 
 Any file you edit and re-upload to the GitHub repo updates the live site automatically within a minute or two — no rebuild step.
 
+**Important:** if you update `app.js` or `style.css`, also bump the `?v=3` number in `index.html` (the two `<script>` tags and the `<link rel="stylesheet">` tag) to `?v=4`, `?v=5`, etc. Phones cache JS/CSS aggressively, so without this, people's browsers can keep running old code even after GitHub shows the new file — that mismatch causes confusing bugs (buttons behaving like an older version). Bumping the version number forces a fresh download every time.
+
 ## Costs
 
 Firebase's free "Spark" plan and GitHub Pages are both free with no card required, and comfortably cover a group of 7 people logging casual games.
